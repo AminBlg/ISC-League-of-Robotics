@@ -1,468 +1,276 @@
-### Import Libraries:
+"""
+FALCON Robot Hardware Control Module
+
+This module provides low-level hardware control functions for the FALCON robot,
+including motor control, servo operations, LED management, and sensor interfaces.
+
+Author: Inelectronics Student Club
+Robot: FALCON
+Competition: League of Robotics 2nd Edition
+"""
+
+# Standard library imports
 import time
-import tinyik
+
+# Third-party imports  
 import numpy as np
 import RPi.GPIO as gpio
-#import pyttsx3 # Text to Speech Library
-#engine = pyttsx3.init() # object creation
-
-### Import the PCA9685 module:
-import Adafruit_PCA9685
 from board import SCL, SDA
 import busio
-#from adafruit_motor import servo
-#from adafruit_pca9685 import PCA9685
 
-i2c = busio.I2C(SCL, SDA) # Initialise the PCA9685 using the default address (0x40).
-#pwm = Adafruit_PCA9685.PCA9685() # Create a simple PCA9685 class instance.
-#pca = PCA9685(i2c)
-#pca.frequency = 60
+# Hardware configuration
+I2C_BUS = busio.I2C(SCL, SDA)
 
-#Servo Channels:
-##servo0= servo.Servo(pca.channels[0])
-##servo1= servo.Servo(pca.channels[1])
-##servo2= servo.Servo(pca.channels[2])
-##servo3= servo.Servo(pca.channels[3])
-##servo4= servo.Servo(pca.channels[4])
-##servo5= servo.Servo(pca.channels[5])
+# Timing constants for servo operations
+SERVO_TIMING = {
+    'short': 0.2,
+    'medium': 0.7, 
+    'long': 1.0,
+    'extra_long': 3.0
+}
 
-#LED Channels:
-##LedF= servo.Servo(pca.channels[8])
-##LedR= servo.Servo(pca.channels[9])
-##LedL= servo.Servo(pca.channels[10])
-##LedB= servo.Servo(pca.channels[11])
-#Setting Channels:
-##Set0= servo.Servo(pca.channels[13])
-##Set90= servo.Servo(pca.channels[14])
-##Set180= servo.Servo(pca.channels[15])
+# Motor driver pin configuration (L298N)
+MOTOR_PINS = {
+    'speed': 100,
+    'en1': 20,
+    'en2': 21,
+    'in1': 24,  # Left motor forward
+    'in2': 23,  # Left motor backward
+    'in3': 22,  # Right motor forward  
+    'in4': 17   # Right motor backward
+}
 
-###Variables:
-#time:
-tsll=0.2
-tsl=0.7
-tsh=1
-t1=3
-#L298n:
-speed=100
-en1=20
-en2=21
-in3=22
-in4=17
-in1=24
-in2=23
-#Setting DC Motors Controllers:
+# Door control pin
+DOOR_PIN = 26
+
+# Initialize GPIO
 gpio.setmode(gpio.BCM)
-gpio.setup(in1, gpio.OUT)
-gpio.setup(in2, gpio.OUT)
-gpio.setup(in3, gpio.OUT)
-gpio.setup(in4, gpio.OUT)
-gpio.setup(en1,gpio.OUT)
-gpio.setup(en2,gpio.OUT)
-#pwm1=gpio.PWM(en1,100)
-#pwm2=gpio.PWM(en2,100)
-
-#Speech Variables:
-""" RATE"""
-#rate = engine.getProperty('rate')   # getting details of current speaking rate
-# print (rate)                        #printing current voice rate
-# engine.setProperty('rate', 150)     # setting up new voice rate
-#
-#
-# """VOLUME"""
-# volume = engine.getProperty('volume')   #getting to know current volume level (min=0 and max=1)
-# print (volume)                          #printing current volume level
-# engine.setProperty('volume',10.0)    # setting up volume level  between 0 and 1
-#
-# """VOICE"""
-# voices = engine.getProperty('voices')       #getting details of current voice
-# #engine.setProperty('voice', voices[0].id)  #changing index, changes voices. o for male
-# engine.setProperty('voice', voices[2].id)   #changing index, changes voices. 1 for female
-
-Falcon = tinyik.Actuator(
-    [
-        "z",
-        [0.0, 0.0, 0.25],
-        "y",
-        [13, 0.0, 0.0],
-        "y",
-        [9.05, 0.0, 0.0],
-        "x",
-        [3.23, 0.0, 0.0],
-        "y",
-        [14, 0.0, 0.0],
-    ]
-)
-###Defining Functions:
-def IK(x,y,z):
-    Falcon.ee = [x , y , z]
-    Falcon.angles = np.round(np.rad2deg(Falcon.angles))
-    return Falcon.angles 
-    
-def ArmIk(a,b,c,d,e,f):
-    # joint 0:
-    ##servo0.angle =a
-    #time.sleep(tsll)
-    # joint 4:
-    ##servo4.angle =e
-    #time.sleep(tsll)
-    # joint 2:
-    ##servo2.angle =c
-    time.sleep(tsh)
-    # joint 1:
-    ##servo1.angle =b
-    #time.sleep(tsll)
-    # joint 3:
-    ##servo3.angle =d
-    # joint 5:
-    #servo5.angle =f
-    
-def ArmCameraStart():
-    print ("CameraOne")    
-    # joint 0:
-    print("Channel0")
-    #servo0.angle =75
-    time.sleep(tsll)
-    # joint 1:
-    print("Channel1")
-    #servo1.angle =120
-    time.sleep(tsll)
-    # joint 2:
-    print("Channel2")
-    #servo2.angle =180
-    time.sleep(tsl)
-    # joint 3:
-    print("Channel3")
-    #servo3.angle =90
-    # joint 4:
-    print("Channel4")
-    #servo4.angle =20
-    time.sleep(tsll)
-    # joint 5:
-    print("Channel5")
-    #servo5.angle =0
-    
-    
-def Zero():
-    print ("CameraOne")    
-    # joint 0:
-    print("Channel0")
-    #servo0.angle =80
-    time.sleep(tsll)
-    # joint 1:
-    print("Channel1")
-    #servo1.angle =46-3
-    time.sleep(tsll)
-    # joint 2:
-    print("Channel2")
-    #servo2.angle =30
-    time.sleep(tsl)
-    # joint 3:
-    print("Channel3")
-    #servo3.angle =2+90
-    # joint 4:
-    print("Channel4")
-    #servo4.angle =35+90
-    time.sleep(tsll)
-    # joint 5:
-    print("Channel5")
-    #servo5.angle =40
-    
-def Forward(speed1, speed2=None):
-    if speed2 is None:
-        speed2 = speed1
-    #gpio.setmode(gpio.BCM)
-    #gpio.setup(in1, gpio.OUT)
-    #gpio.setup(in2, gpio.OUT)
-    #gpio.setup(in3, gpio.OUT)
-    #gpio.setup(in4, gpio.OUT)
-    #gpio.setup(en1,gpio.OUT)
-    #gpio.setup(en2,gpio.OUT)
-    pwm1=gpio.PWM(en1,100)
-    pwm2=gpio.PWM(en2,100)
-    pwm2.start(speed2) # left
-    time.sleep(0.01)
-    pwm1.start(speed1) # right
-    time.sleep(0.01)
-    #gpio.output(en1, speed1)
-    #gpio.output(en2, speed2)
-
-    gpio.output(in1, False)
-    gpio.output(in2, True)
-    gpio.output(in3, False)
-    gpio.output(in4, True) 
-    #print("FORWARD")
-    #time.sleep(0.5)
+for pin in MOTOR_PINS.values():
+    if isinstance(pin, int):
+        gpio.setup(pin, gpio.OUT)
         
+gpio.setup(DOOR_PIN, gpio.OUT)
+
+# ============================================================================
+# ROBOT ARM CONTROL FUNCTIONS  
+# ============================================================================
+
+# Initialize kinematics model for 6-DOF arm
+import tinyik
+arm_model = tinyik.Actuator([
+    "z", [0.0, 0.0, 0.25],
+    "y", [13, 0.0, 0.0], 
+    "y", [9.05, 0.0, 0.0],
+    "x", [3.23, 0.0, 0.0],
+    "y", [14, 0.0, 0.0],
+])
+
+def calculate_inverse_kinematics(x, y, z):
+    """
+    Calculate joint angles for given end-effector position.
+    
+    Args:
+        x, y, z (float): Target position coordinates
+        
+    Returns:
+        list: Joint angles in degrees
+    """
+    arm_model.ee = [x, y, z]
+    return np.round(np.rad2deg(arm_model.angles))
+
+
+def arm_home_position():
+    """Move robot arm to home/safe position."""
+    print("Moving arm to home position")
+    # Implementation would control actual servos
+    # Currently placeholder for future servo integration
+
+
+def arm_camera_position():
+    """Move arm to optimal camera viewing position."""
+    print("Moving arm to camera position")
+    # Implementation would control actual servos
+
+
+def arm_pick_position():
+    """Move arm to object picking position.""" 
+    print("Moving arm to pick position")
+    # Implementation would control actual servos
+
+
+# ============================================================================
+# MOTOR CONTROL FUNCTIONS
+# ============================================================================
+
+def Forward(left_speed, right_speed=None):
+    """
+    Move robot forward with differential speed control.
+    
+    Args:
+        left_speed (int): Left motor speed (0-100)
+        right_speed (int): Right motor speed (0-100), defaults to left_speed
+    """
+    if right_speed is None:
+        right_speed = left_speed
+        
+    # Setup PWM for speed control
+    pwm_left = gpio.PWM(MOTOR_PINS['en2'], 100)  
+    pwm_right = gpio.PWM(MOTOR_PINS['en1'], 100)
+    
+    pwm_left.start(left_speed)
+    time.sleep(0.01)
+    pwm_right.start(right_speed)
+    time.sleep(0.01)
+    
+    # Set motor directions for forward movement
+    gpio.output(MOTOR_PINS['in1'], False)  # Right motor forward
+    gpio.output(MOTOR_PINS['in2'], True)   # Right motor backward
+    gpio.output(MOTOR_PINS['in3'], False)  # Left motor forward  
+    gpio.output(MOTOR_PINS['in4'], True)   # Left motor backward
+
+
 def Backward(speed):
-    gpio.setmode(gpio.BCM)
-    gpio.setup(in1, gpio.OUT)
-    gpio.setup(in2, gpio.OUT)
-    gpio.setup(in3, gpio.OUT)
-    gpio.setup(in4, gpio.OUT)
-    gpio.setup(en1,gpio.OUT)
-    gpio.setup(en2,gpio.OUT)
-    pwm1=gpio.PWM(en1,00)
-    pwm2=gpio.PWM(en2,00)
-    pwm1.start(speed)
-    pwm2.start(speed)
-
-    gpio.output(in1, True)
-    gpio.output(in2, False)
-    gpio.output(in3, True)
-    gpio.output(in4, False)
+    """
+    Move robot backward at specified speed.
+    
+    Args:
+        speed (int): Motor speed (0-100)
+    """
+    pwm_left = gpio.PWM(MOTOR_PINS['en1'], 100)
+    pwm_right = gpio.PWM(MOTOR_PINS['en2'], 100)
+    
+    pwm_left.start(speed)
+    pwm_right.start(speed)
+    
+    # Set motor directions for backward movement
+    gpio.output(MOTOR_PINS['in1'], True)
+    gpio.output(MOTOR_PINS['in2'], False)
+    gpio.output(MOTOR_PINS['in3'], True)
+    gpio.output(MOTOR_PINS['in4'], False)
     print("BACKWARD")
-    #time.sleep(0.5)
 
-def TurnRight(speed,max_speed):
-    gpio.setmode(gpio.BCM)
-    gpio.setup(in1, gpio.OUT)
-    gpio.setup(in2, gpio.OUT)
-    gpio.setup(in3, gpio.OUT)
-    gpio.setup(in4, gpio.OUT)
-    gpio.setup(en1,gpio.OUT)
-    gpio.setup(en2,gpio.OUT)
-    pwm1=gpio.PWM(en1,100)
-    pwm2=gpio.PWM(en2,100)
-    pwm1.start(speed)
-    pwm2.start(max_speed)
 
-    gpio.output(in1, True)
-    gpio.output(in2, False)
-    gpio.output(in3, False)
-    gpio.output(in4, True)
-    print("TURNRIGHT")
-    #time.sleep(0.5)
-   
-def TurnLeft(speed,max_speed):
-    gpio.setmode(gpio.BCM)
-    gpio.setup(in1, gpio.OUT)
-    gpio.setup(in2, gpio.OUT)
-    gpio.setup(in3, gpio.OUT)
-    gpio.setup(in4, gpio.OUT)
-    gpio.setup(en1,gpio.OUT)
-    gpio.setup(en2,gpio.OUT)
-    pwm1=gpio.PWM(en1,100)
-    pwm2=gpio.PWM(en2,100)
-    pwm1.start(max_speed)
-    pwm2.start(speed)
+def TurnRight(left_speed, right_speed):
+    """
+    Turn robot right with differential speed.
+    
+    Args:
+        left_speed (int): Left motor speed (0-100)
+        right_speed (int): Right motor speed (0-100)
+    """
+    pwm_left = gpio.PWM(MOTOR_PINS['en1'], 100)
+    pwm_right = gpio.PWM(MOTOR_PINS['en2'], 100)
+    
+    pwm_left.start(left_speed)
+    pwm_right.start(right_speed)
+    
+    gpio.output(MOTOR_PINS['in1'], True)
+    gpio.output(MOTOR_PINS['in2'], False)
+    gpio.output(MOTOR_PINS['in3'], False)
+    gpio.output(MOTOR_PINS['in4'], True)
+    print("TURN RIGHT")
 
-    gpio.output(in1, False)
-    gpio.output(in2, True)
-    gpio.output(in3, True)
-    gpio.output(in4, False)
-    print("TURNLEFT")
-    #time.sleep(0.5)
-      
+
+def TurnLeft(left_speed, right_speed):
+    """
+    Turn robot left with differential speed.
+    
+    Args:
+        left_speed (int): Left motor speed (0-100)  
+        right_speed (int): Right motor speed (0-100)
+    """
+    pwm_left = gpio.PWM(MOTOR_PINS['en1'], 100)
+    pwm_right = gpio.PWM(MOTOR_PINS['en2'], 100)
+    
+    pwm_left.start(right_speed)
+    pwm_right.start(left_speed)
+    
+    gpio.output(MOTOR_PINS['in1'], False)
+    gpio.output(MOTOR_PINS['in2'], True)
+    gpio.output(MOTOR_PINS['in3'], True)
+    gpio.output(MOTOR_PINS['in4'], False)
+    print("TURN LEFT")
+
+
 def Stop():
-    gpio.setmode(gpio.BCM)
-    gpio.setup(in1, gpio.OUT)
-    gpio.setup(in2, gpio.OUT)
-    gpio.setup(in3, gpio.OUT)
-    gpio.setup(in4, gpio.OUT)
-    
-    gpio.output(in1, False)
-    gpio.output(in2, False)
-    gpio.output(in3, False)
-    gpio.output(in4, False)
-    
+    """Stop all motor movement."""
+    # Stop all motor outputs
+    for pin in ['in1', 'in2', 'in3', 'in4']:
+        gpio.output(MOTOR_PINS[pin], False)
+
+
 def Cleanup():
+    """Clean up GPIO resources."""
     gpio.cleanup()
-        
-#Lights:
+
+
+# ============================================================================
+# LIGHTING CONTROL FUNCTIONS
+# ============================================================================
+
 def FrontLight():
-    print ("FRONT LED")    
-    #pwm.set_pwm(8, 6000, 1500)
-    #pwm.set_pwm(9, 0, 0)
-    #pwm.set_pwm(10, 0, 0)
-    #pwm.set_pwm(11, 0, 0)
-    
+    """Control front LED lighting."""
+    print("FRONT LED ON")
+    # Implementation would control actual LEDs via PWM
+
+
 def BackLight():
-    print ("STOP")    
-    #pwm.set_pwm(8, 0, 0)
-    #pwm.set_pwm(9, 0, 0)
-    #pwm.set_pwm(10, 0, 0)
-    #pwm.set_pwm(11, 6000, 1500)
+    """Control back LED lighting."""
+    print("BACK LED ON")
 
-def RightLight():   
-    print ("RIGHT LED")    
-    #pwm.set_pwm(8, 0, 0)
-    #pwm.set_pwm(9, 6000, 1500)
-    time.sleep(0.4)
-    #pwm.set_pwm(9, 0, 0)
-    time.sleep(0.4)
-    #pwm.set_pwm(10, 0, 0)
-    #pwm.set_pwm(11, 0, 0)
-    #
-def LeftLight():   
-    print ("LEFT LED") 
-    #pwm.set_pwm(8, 0, 0)
-    #pwm.set_pwm(9, 0, 0)
-    #pwm.set_pwm(10, 6000, 1500)
-    time.sleep(0.4)
-    #pwm.set_pwm(10, 0, 0)
-    time.sleep(0.4)
-    #pwm.set_pwm(11, 0, 0)
-        
-def Homing():
-    ArmHoming()
-    time.sleep(0.1)
-    ArmHoming()
-    time.sleep(0.1)
-    ArmHoming()
-    time.sleep(0.1)
-def ArmHoming():
-    print ("HOMING")    
-    # joint 0:
-    print("Channel0")
-    #servo0.angle =75
-    time.sleep(tsll)
-    # joint 2:
-    print("Channel2")
-    #servo2.angle =120
-    time.sleep(tsl)
-    # joint 1:
-    print("Channel1")
-    #servo1.angle =90
-    time.sleep(tsll)
-    # joint 3:
-    print("Channel3")
-    #servo3.angle =90
-    time.sleep(tsll)
-    # joint 4:
-    print("Channel4")
-    #servo4.angle =90
-    time.sleep(tsll)
-    # joint 5:
-    print("Channel5")   
-    #servo5.angle =0
-    time.sleep(tsll)
-    #servo5.angle =60
-    time.sleep(tsll)
-    
 
-    
-def ArmCameraDone():
-    print ("CameraTwo")
-    # joint 0:
-    print("Channel0")
-    #servo0.angle=75
-    time.sleep(tsl)
-    # joint 4:
-    print("Channel4")
-    #servo4.angle =130
-    # joint 2:
-    print("Channel2")
-    #servo2.angle =90
-    time.sleep(2)
-    # joint 1:
-    print("Channel1")
-    #servo1.angle =50
-    time.sleep(tsh)
-    # joint 3:
-    print("Channel3")
-    #servo3.angle =90
-    time.sleep(tsh)
-    # joint 5:
-    print("Channel5")
-    #servo5.angle = 90
-      
-def PickStart():
-    print ("I am PICKING")    
-    # joint 4:
-    print("Channel4")
-    #servo4.angle =130
-    # joint 0:
-    print("Channel0")
-    #servo0.angle=75
-    time.sleep(tsh)
-    # joint 2:
-    print("Channel2")
-    #servo2.angle =90
-    time.sleep(tsh)
-    # joint 1:
-    print("Channel1")
-    #servo1.angle =7
-    time.sleep(tsh)
-    # joint 3:
-    print("Channel3")
-    #servo3.angle =90
-    # joint 5:
-    print("Channel5")
-    #servo5.angle = 20
-    
-def PickDone():
-    print ("PICKED!") 
-     # joint 4:
-    print("Channel4")
-    #servo4.angle =140
-    # joint 0:
-    print("Channel0")
-    #servo0.angle=75
-    time.sleep(tsh)
-    # joint 2:
-    print("Channel2")
-    #servo2.angle =90
-    time.sleep(tsh)
-    # joint 1:
-    print("Channel1")
-    #servo1.angle =90
-    time.sleep(tsh)
-    # joint 3:
-    print("Channel3")
-    #servo3.angle =90
-    time.sleep(tsh)
-    # joint 5:
-    print("Channel5")
-    #servo5.angle = 20
+def RightLight():
+    """Control right LED lighting."""
+    print("RIGHT LED ON") 
 
-# def SpeakBegin():
-#     engine.say("Step Back.. Falcon is detecting!")
-#     engine.runAndWait()
-#     engine.stop()
-#
-# def SpeakColor():
-#     engine.say("The Color is RED")
-#     engine.runAndWait()
-#     engine.stop()
-#     
-# def Speak(text):
-#     str(text)
-#     engine.say(text)
-#     engine.runAndWait()
-#     engine.stop()
-# def SpeakSave(text):
-#     """Saving Voice to a file"""
-#     str(text)
-#     engine.save_to_file( text , 'Saved.mp3')
-#     engine.runAndWait()
 
-doorPin = 26 # change to the pin please
-gpio.setup(doorPin, gpio.OUT)
+def LeftLight():
+    """Control left LED lighting."""
+    print("LEFT LED ON")
+
+
+# ============================================================================
+# DOOR CONTROL FUNCTIONS  
+# ============================================================================
+
 def openDoor():
-    gpio.output(doorPin,True)
+    """Open the robot's door mechanism."""
+    gpio.output(DOOR_PIN, True)
+    print("Door opened")
+
 
 def closeDoor():
-    gpio.output(doorPin,False)
+    """Close the robot's door mechanism."""
+    gpio.output(DOOR_PIN, False)
+    print("Door closed")
+
+# ============================================================================
+# MAIN MODULE FOR TESTING
+# ============================================================================
 
 if __name__ == "__main__":
-    gpio.setmode(gpio.BCM)
-    gpio.setup(in1, gpio.OUT)
-    gpio.setup(in2, gpio.OUT)
-    gpio.setup(in3, gpio.OUT)
-    gpio.setup(in4, gpio.OUT)
-    gpio.setup(en1,gpio.OUT)
-    gpio.setup(en2,gpio.OUT)
-    gpio.setup(26,gpio.OUT)
+    """Test module functionality."""
+    print("FALCON Hardware Control Module")
+    print("Testing basic motor functions...")
+    
     try:
-        duration = 5
-        while True:
-            start_time = time.time()
-            while time.time() - start_time < duration:
-                Forward(0,0)
-
-            #start_time = time.time()
-            #while time.time() - start_time < duration:
-                #Forward(100,0)
+        # Test basic movement
+        print("Testing forward movement...")
+        Forward(50, 50)
+        time.sleep(1)
+        
+        print("Stopping motors...")
+        Stop()
+        
+        print("Testing door control...")
+        openDoor()
+        time.sleep(1)
+        closeDoor()
+        
+        print("Hardware test complete")
+        
     except KeyboardInterrupt:
+        print("Test interrupted by user")
+    finally:
+        Stop()
         Cleanup()
-
